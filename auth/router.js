@@ -3,7 +3,7 @@ const { toJWT, toData } = require("./jwt");
 const User = require("../user/model");
 const bcrypt = require("bcrypt");
 
-function login(res, name = null, password = null) {
+function login(res, next, name = null, password = null) {
   if (!name || !password) {
     res.status(400).send({
       message: "Please supply a valid name and password"
@@ -33,10 +33,7 @@ function login(res, name = null, password = null) {
         }
       })
       .catch(err => {
-        console.error(err);
-        res.status(500).send({
-          message: "Something went wrong: " + err
-        });
+        next(err);
       });
   }
 }
@@ -44,10 +41,10 @@ function login(res, name = null, password = null) {
 const router = new Router();
 
 router.post("/login", (req, res, next) => {
-  //do we need to use next here?
+  //do we need to use next here? - we pass it to login function
   const name = req.body.name;
   const password = req.body.password;
-  login(res, name, password);
+  login(res, next, name, password);
 });
 
 module.exports = { router, login };

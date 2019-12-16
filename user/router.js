@@ -17,7 +17,7 @@ router.post("/signup", (req, res, next) => {
       });
     } else {
       User.create(user)
-        .then(user => login(res, user.name, req.body.password))
+        .then(user => login(res, next, user.name, req.body.password))
         .catch(error => next(error));
     }
   });
