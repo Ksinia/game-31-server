@@ -7,11 +7,11 @@ const cors = require("cors");
 const Sse = require("json-sse");
 const roomRouterFactory = require("./room/router");
 const Room = require("./room/model");
-
 const port = process.env.PORT || 4000;
 const app = express();
 const bodyParserMiddleware = bodyParser.json();
 const corsMiddleware = cors();
+const User = require("./user/model");
 app.use(corsMiddleware);
 app.use(bodyParserMiddleware);
 app.use(loginRouter);
@@ -30,7 +30,16 @@ app.get("/", (req, res) => {
 
 app.get("/stream", async (req, res, next) => {
   try {
-    const rooms = await Room.findAll();
+    const rooms = await Room.findAll({
+      include: [
+        {
+          model: User,
+          attributes: {
+            exclude: ["password", "createdAt", "updatedAt", "roomId"]
+          }
+        }
+      ]
+    });
     const action = {
       type: "ALL_ROOMS",
       payload: rooms
