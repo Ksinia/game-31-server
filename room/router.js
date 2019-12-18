@@ -28,12 +28,16 @@ function factory(stream) {
 
   router.put("/join", async (req, res, next) => {
     // request should have userId, oldRoomId and newRoomId, named as such
-    // console.log(req.body.oldRoomId, "room id");
-    // console.log(oldRoom, "O L D R O O M");
+    // works best if sending empty data as undefined, not sure what happens on null
+
     try {
+      let newRoomId = req.body.newRoomId;
+      if (!newRoomId) {
+        newRoomId = null;
+      }
       const user = await User.update(
         {
-          roomId: req.body.newRoomId
+          roomId: newRoomId
         },
         {
           where: { id: req.body.userId }
@@ -48,16 +52,18 @@ function factory(stream) {
           include: [User]
         }));
 
-      const newRoom = await Room.findByPk(req.body.newRoomId, {
-        include: [
-          {
-            model: User,
-            attributes: {
-              exclude: ["password", "createdAt", "updatedAt", "roomId"]
+      const newRoom =
+        null ||
+        (await Room.findByPk(req.body.newRoomId, {
+          include: [
+            {
+              model: User,
+              attributes: {
+                exclude: ["password", "createdAt", "updatedAt", "roomId"]
+              }
             }
-          }
-        ]
-      });
+          ]
+        }));
       const action = {
         type: "UPDATED_ROOMS",
         payload: {
