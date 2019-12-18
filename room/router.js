@@ -32,6 +32,11 @@ function factory(stream) {
     const userId = req.user.id;
 
     try {
+      const oldRoomIdBlock = await User.findByPk(userId, {
+        attributes: ["roomId"]
+      });
+      const oldRoomId = oldRoomIdBlock.dataValues.roomId;
+      console.log("O L D R O O M", oldRoomId);
       let newRoomId = req.body.newRoomId;
       if (!newRoomId) {
         newRoomId = null;
@@ -45,12 +50,17 @@ function factory(stream) {
         }
       );
 
-      console.log(req.body.oldRoomId, "old room id");
-
       const oldRoom =
         null ||
-        (await Room.findByPk(req.body.oldRoomId, {
-          include: [User]
+        (await Room.findByPk(oldRoomId, {
+          include: [
+            {
+              model: User,
+              attributes: {
+                exclude: ["password", "createdAt", "updatedAt", "roomId"]
+              }
+            }
+          ]
         }));
 
       const newRoom =
