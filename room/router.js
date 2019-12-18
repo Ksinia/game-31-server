@@ -15,19 +15,6 @@ function factory(stream) {
       });
       const oldRoomId = oldRoomIdBlock.dataValues.roomId;
 
-      const oldRoom =
-        null ||
-        (await Room.findByPk(oldRoomId, {
-          include: [
-            {
-              model: User,
-              attributes: {
-                exclude: ["password", "createdAt", "updatedAt", "roomId"]
-              }
-            }
-          ]
-        }));
-
       const user = await User.update(
         {
           roomId: room.dataValues.id
@@ -40,6 +27,19 @@ function factory(stream) {
       const userData = await User.findByPk(userId, {
         attributes: ["id", "name"]
       });
+
+      const oldRoom =
+        null ||
+        (await Room.findByPk(oldRoomId, {
+          include: [
+            {
+              model: User,
+              attributes: {
+                exclude: ["password", "createdAt", "updatedAt", "roomId"]
+              }
+            }
+          ]
+        }));
 
       const action = {
         type: "NEW_ROOM",
