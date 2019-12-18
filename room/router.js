@@ -9,11 +9,22 @@ function factory(stream) {
   router.post("/room", authMiddleware, async (req, res, next) => {
     const userId = req.user.id;
     try {
-      const room = await Room.create({ ...req.body, userId: userId });
+      const room = await Room.create(req.body);
+
+      const user = await User.update(
+        {
+          roomId: room.dataValues.id
+        },
+        {
+          where: { id: userId }
+        }
+      );
+
+      const userData = await User.findByPk(userId);
 
       const action = {
         type: "NEW_ROOM",
-        payload: { ...room.dataValues, owner: req.user.name }
+        payload: { ...room.dataValues, users: userData }
       };
 
       const string = JSON.stringify(action);
@@ -41,6 +52,7 @@ function factory(stream) {
       if (!newRoomId) {
         newRoomId = null;
       }
+
       const user = await User.update(
         {
           roomId: newRoomId
