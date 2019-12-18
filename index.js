@@ -20,6 +20,7 @@ app.use(signupRouter);
 const stream = new Sse();
 
 const roomRouter = roomRouterFactory(stream);
+
 app.use(roomRouter);
 
 app.get("/", (req, res) => {
@@ -27,7 +28,7 @@ app.get("/", (req, res) => {
   res.send("Hello"); //we need res.send to avoid timed out error
 });
 
-app.get("/stream", async (req, res) => {
+app.get("/stream", async (req, res, next) => {
   try {
     const rooms = await Room.findAll();
     const action = {
