@@ -26,9 +26,10 @@ function factory(stream) {
     }
   });
 
-  router.put("/join", async (req, res, next) => {
+  router.put("/join", authMiddleware, async (req, res, next) => {
     // request should have userId, oldRoomId and newRoomId, named as such
     // works best if sending empty data as undefined, not sure what happens on null
+    const userId = req.user.id;
 
     try {
       let newRoomId = req.body.newRoomId;
@@ -40,7 +41,7 @@ function factory(stream) {
           roomId: newRoomId
         },
         {
-          where: { id: req.body.userId }
+          where: { id: userId }
         }
       );
 
