@@ -24,7 +24,7 @@ function factory(stream) {
 
       const action = {
         type: "NEW_ROOM",
-        payload: { ...room.dataValues, users: userData }
+        payload: { ...room.dataValues, users: [userData] }
       };
 
       const string = JSON.stringify(action);
