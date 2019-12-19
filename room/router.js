@@ -2,116 +2,107 @@ const { Router } = require("express");
 const Room = require("./model");
 const authMiddleware = require("../auth/middleware");
 const User = require("../user/model");
+const Card = require("../card/model");
 
 function factory(stream) {
   const router = new Router();
 
+  const switchRooms = async (user, newRoomId, next) => {
+    try {
+      const oldRoom = await Room.findByPk(user.roomId, {
+        include: [
+          {
+            model: User,
+            attributes: {
+              exclude: ["password", "createdAt", "updatedAt", "roomId"]
+            }
+          },
+          Card
+        ]
+      });
+      oldRoom &&
+        (await oldRoom.update({
+          phase: "waiting"
+        }));
+      const oldRoomId = oldRoom ? oldRoom.id : null;
+
+      await user.update({
+        roomId: newRoomId
+      });
+      const newRoom = await Room.findByPk(newRoomId, {
+        include: [
+          {
+            model: User,
+            attributes: {
+              exclude: ["password", "createdAt", "updatedAt", "roomId"]
+            }
+          },
+          Card
+        ]
+      });
+      if (newRoom && newRoom.users.length == newRoom.maxPlayers) {
+        await newRoom.update({
+          phase: "ready"
+        });
+      }
+
+      const updatedOldRoom = await Room.findByPk(oldRoomId, {
+        include: [
+          {
+            model: User,
+            attributes: {
+              exclude: ["password", "createdAt", "updatedAt", "roomId"]
+            }
+          },
+          Card
+        ]
+      });
+      const updatedNewRoom = await Room.findByPk(newRoomId, {
+        include: [
+          {
+            model: User,
+            attributes: {
+              exclude: ["password", "createdAt", "updatedAt", "roomId"]
+            }
+          },
+          Card
+        ]
+      });
+      return {
+        oldRoom: updatedOldRoom,
+        newRoom: updatedNewRoom
+      };
+    } catch (error) {
+      next(error);
+    }
+  };
+
   router.post("/room", authMiddleware, async (req, res, next) => {
-    const userId = req.user.id;
+    const user = req.user;
     try {
       const room = await Room.create(req.body);
-      const oldRoomIdBlock = await User.findByPk(userId, {
-        attributes: ["roomId"]
-      });
-      const oldRoomId = oldRoomIdBlock.dataValues.roomId;
-
-      const user = await User.update(
-        {
-          roomId: room.dataValues.id
-        },
-        {
-          where: { id: userId }
-        }
-      );
-
-      const userData = await User.findByPk(userId, {
-        attributes: ["id", "name"]
-      });
-
-      const oldRoom =
-        null ||
-        (await Room.findByPk(oldRoomId, {
-          include: [
-            {
-              model: User,
-              attributes: {
-                exclude: ["password", "createdAt", "updatedAt", "roomId"]
-              }
-            }
-          ]
-        }));
-
+      const newRoomId = room.id;
+      const updatedRooms = await switchRooms(user, newRoomId, next);
       const action = {
         type: "NEW_ROOM",
-        payload: { newRoom: { ...room.dataValues, users: [userData] }, oldRoom }
+        payload: updatedRooms
       };
-
       const string = JSON.stringify(action);
-
       stream.send(string);
-
-      res.send(room);
+      res.send(updatedRooms);
     } catch (error) {
       next(error);
     }
   });
 
   router.put("/join", authMiddleware, async (req, res, next) => {
-    // request should have userId,  newRoomId, named as such
-    // works best if sending empty data as undefined, not sure what happens on null
-    const userId = req.user.id;
-
+    const user = req.user;
+    const newRoomId = req.body.newRoomId;
     try {
-      const oldRoomIdBlock = await User.findByPk(userId, {
-        attributes: ["roomId"]
-      });
-      const oldRoomId = oldRoomIdBlock.dataValues.roomId;
-      console.log("O L D R O O M", oldRoomId);
-      let newRoomId = req.body.newRoomId;
-      if (!newRoomId) {
-        newRoomId = null;
-      }
-
-      const user = await User.update(
-        {
-          roomId: newRoomId
-        },
-        {
-          where: { id: userId }
-        }
-      );
-
-      const oldRoom =
-        null ||
-        (await Room.findByPk(oldRoomId, {
-          include: [
-            {
-              model: User,
-              attributes: {
-                exclude: ["password", "createdAt", "updatedAt", "roomId"]
-              }
-            }
-          ]
-        }));
-
-      const newRoom =
-        null ||
-        (await Room.findByPk(req.body.newRoomId, {
-          include: [
-            {
-              model: User,
-              attributes: {
-                exclude: ["password", "createdAt", "updatedAt", "roomId"]
-              }
-            }
-          ]
-        }));
+      const updatedRooms = await switchRooms(user, newRoomId, next);
       const action = {
         type: "UPDATED_ROOMS",
-        payload: {
-          oldRoom,
-          newRoom
-        }
+        payload: updatedRooms
       };
       const string = JSON.stringify(action);
       stream.send(string);
@@ -120,6 +111,7 @@ function factory(stream) {
       next(error);
     }
   });
+
   return router;
 }
 module.exports = factory;

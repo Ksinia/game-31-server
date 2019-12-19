@@ -13,10 +13,10 @@ const Room = db.define("room", {
   },
   phase: {
     type: Sequelize.ENUM("waiting", "ready", "started", "finished"),
-    default: "waiting"
+    defaultValue: "waiting"
   },
   turn: Sequelize.INTEGER,
-  passed: { type: Sequelize.INTEGER, default: null }
+  passed: { type: Sequelize.INTEGER, defaultValue: null }
 });
 
 User.belongsTo(Room);

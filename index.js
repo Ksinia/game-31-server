@@ -13,6 +13,7 @@ const app = express();
 const bodyParserMiddleware = bodyParser.json();
 const corsMiddleware = cors();
 const User = require("./user/model");
+const Card = require("./card/model");
 app.use(corsMiddleware);
 app.use(bodyParserMiddleware);
 app.use(loginRouter);
@@ -40,7 +41,8 @@ app.get("/stream", async (req, res, next) => {
           attributes: {
             exclude: ["password", "createdAt", "updatedAt", "roomId"]
           }
-        }
+        },
+        Card
       ]
     });
     const action = {
