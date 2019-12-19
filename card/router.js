@@ -59,6 +59,7 @@ function factory(stream) {
       // delete all cards that belong to this room
       //delete all cards that belong to users in this room
       roomId = req.body.roomId;
+      console.log("roomId", roomId);
 
       Card.destroy({
         where: { roomId: roomId }
@@ -67,7 +68,7 @@ function factory(stream) {
       //shuffle the deck
       const shuffled = shuffle(deck);
 
-      const room = await room.findByPk(roomId, {
+      const room = await Room.findByPk(roomId, {
         include: [
           {
             model: User,
@@ -78,35 +79,28 @@ function factory(stream) {
         ]
       });
 
-      const hands = [...room.users, { id: Null }];
+      const hands = [...room.users, { id: null }];
       console.log(hands);
 
-      await shuffled
-        .slice(0, (room.maxPlayers + 1) * 3)
-        .map((card, index, array) => {
-          Card.create({
-            cardObject: card,
-            RoomId: room.id,
-            UserId: hands[index % hands.length].id
-          });
-        });
-
-      const updatedRoom = await room.update(
-        {
-          phase: "started"
-        },
-        {
-          include: [
-            {
-              model: User,
-              attributes: {
-                exclude: ["password", "createdAt", "updatedAt"]
-              }
-            },
-            { model: Card }
-          ]
-        }
+      await Promise.all(
+        shuffled
+          .slice(0, (room.maxPlayers + 1) * 3)
+          .map(async (card, index, array) => {
+            await Card.create({
+              cardObject: card,
+              roomId: room.id,
+              userId: hands[index % hands.length].id
+            });
+          })
       );
+
+      await room.update({
+        phase: "started",
+        turn: room.users[0].id
+      });
+      const updatedRoom = await Room.findByPk(roomId, {
+        include: [User, Card]
+      });
 
       const action = {
         type: "UPDATE_GAME",
