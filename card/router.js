@@ -123,8 +123,12 @@ function factory(stream) {
     roomId = req.body.roomId;
 
     try {
+      Card.update({});
     } catch (error) {
       nxt(error);
     }
   });
+  return router;
 }
+
+module.exports = factory;
