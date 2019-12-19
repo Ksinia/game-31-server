@@ -1,5 +1,6 @@
 const { Router } = require("express");
 const authMiddleware = require("../auth/middleware");
+const Card = require("./model");
 
 const deck = [
   { face: "7", suit: "S", value: 7 },
