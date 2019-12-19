@@ -38,6 +38,16 @@ const deck = [
   { face: "A", suit: "D", value: 11 }
 ];
 
+function endgame() {}
+
+function nextTurn(userId, turnOrder) {
+  const currentTurnIndex = turnOrder.findIndex(id => {
+    return id === userId;
+  });
+  const nextTurnId = turnOrder[currentTurnIndex + (1 % turnOrder.length)];
+  return nextTurnId;
+}
+
 function shuffle(deck) {
   for (let i = deck.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * i);
@@ -116,14 +126,134 @@ function factory(stream) {
   });
 
   router.put("/turn", authMiddleware, async (req, res, nxt) => {
-    roomId = req.body.roomId;
+    const roomId = req.body.roomId;
+    const discardId = req.body.discard;
+    const pickId = req.body.pick;
+    const userId = req.user.id;
 
     try {
-      Card.update({});
+      //set turn order
+      const room = await Room.findByPk(roomId, {
+        include: [
+          {
+            model: User,
+            attributes: {
+              exclude: ["password", "createdAt", "updatedAt"]
+            }
+          }
+        ]
+      });
+
+      if (room.passed === userId) {
+        endgame();
+      } else {
+        console.log("room", room);
+
+        playerIds = room.Users.map(user => {
+          return user.id;
+        });
+        const turnOrder = playerIds.sort(function(a, b) {
+          return a - b;
+        });
+
+        // check if a turn was passed, and if that is this players turn
+        //update cards
+        await Card.update(
+          { userId: userId },
+          {
+            where: { id: pickId, roomId: roomId }
+          }
+        );
+        await Card.update(
+          { userId: null },
+          {
+            where: { id: discardId, roomId: roomId }
+          }
+        );
+
+        // update turn
+        const nextTurnId = nextTurn(userId, turnOrder);
+        await Room.update({ turn: nextTurnId }, { where: { id: roomId } });
+        //send entire Room to stream
+        const updatedRoom = await Room.findByPk(roomId, {
+          include: [User, Card]
+        });
+
+        const action = {
+          type: "UPDATE_GAME",
+          payload: updatedRoom
+        };
+
+        const string = JSON.stringify(action);
+
+        stream.send(string);
+        res.send(string);
+      }
     } catch (error) {
       nxt(error);
     }
   });
+
+  router.put("/pass", authMiddleware, async (req, res, nxt) => {
+    const roomId = req.body.roomId;
+    const userId = req.user.id;
+    try {
+      const room = await Room.findByPk(roomId, {
+        include: [
+          {
+            model: User,
+            attributes: {
+              exclude: ["password", "createdAt", "updatedAt"]
+            }
+          }
+        ]
+      });
+
+      //just give the next turn
+      playerIds = room.Users.map(user => {
+        return user.id;
+      });
+      const turnOrder = playerIds.sort(function(a, b) {
+        return a - b;
+      });
+      const nextTurnId = nextTurn(userId, turnOrder);
+      await Room.update({ turn: nextTurnId }, { where: { id: roomId } });
+      //send entire Room to stream
+      const updatedRoom = await Room.findByPk(roomId, {
+        include: [User, Card]
+      });
+
+      if (room.passed) {
+        const action = {
+          type: "UPDATE_GAME",
+          payload: updatedRoom
+        };
+
+        const string = JSON.stringify(action);
+
+        stream.send(string);
+        res.send(string);
+      } else {
+        //set passed to userId
+        await Room.update({ passed: userId }, { where: { id: roomId } });
+        const updatedRoom2 = await Room.findByPk(roomId, {
+          include: [User, Card]
+        });
+        const action = {
+          type: "UPDATE_GAME",
+          payload: updatedRoom2
+        };
+
+        const string = JSON.stringify(action);
+
+        stream.send(string);
+        res.send(string);
+      }
+    } catch (error) {
+      nxt(error);
+    }
+  });
+
   return router;
 }
 
