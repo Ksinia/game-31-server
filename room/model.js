@@ -11,7 +11,10 @@ const Room = db.define("room", {
       max: 4
     }
   },
-  phase: Sequelize.ENUM("waiting", "ready", "started", "finished"),
+  phase: {
+    type: Sequelize.ENUM("waiting", "ready", "started", "finished"),
+    default: "waiting"
+  },
   turn: Sequelize.INTEGER,
   passed: { type: Sequelize.INTEGER, default: null }
 });
