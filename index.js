@@ -2,6 +2,7 @@ const express = require("express");
 const db = require("./db");
 const { router: loginRouter } = require("./auth/router");
 const signupRouter = require("./user/router");
+const cardRouterFactory = require("./card/router");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const Sse = require("json-sse");
@@ -19,9 +20,11 @@ app.use(signupRouter);
 
 const stream = new Sse();
 
+const cardRouter = cardRouterFactory(stream);
 const roomRouter = roomRouterFactory(stream);
 
 app.use(roomRouter);
+app.use(cardRouter);
 
 app.get("/", (req, res) => {
   stream.send("test");

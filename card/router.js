@@ -115,7 +115,16 @@ function factory(stream) {
       stream.send(string);
       res.send(string);
     } catch (error) {
-      next(error);
+      nxt(error);
+    }
+  });
+
+  router.put("/turn", authMiddleware, async (req, res, nxt) => {
+    roomId = req.body.roomId;
+
+    try {
+    } catch (error) {
+      nxt(error);
     }
   });
 }
