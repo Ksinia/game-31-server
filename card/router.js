@@ -59,8 +59,6 @@ function shuffle(deck) {
   return deck;
 }
 
-console.log(shuffle(deck));
-
 function factory(stream) {
   const router = new Router();
 
@@ -90,7 +88,6 @@ function factory(stream) {
       });
 
       const hands = [...room.users, { id: null }];
-      console.log(hands);
 
       await Promise.all(
         shuffled
@@ -148,9 +145,7 @@ function factory(stream) {
       if (room.passed === userId) {
         endgame();
       } else {
-        console.log("room", room);
-
-        playerIds = room.Users.map(user => {
+        playerIds = room.users.map(user => {
           return user.id;
         });
         const turnOrder = playerIds.sort(function(a, b) {
