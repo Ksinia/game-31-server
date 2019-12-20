@@ -39,6 +39,49 @@ const deck = [
   { face: "A", suit: "D", value: 11 }
 ];
 
+// magic function, see test.js for tests
+
+function find_mode(arr) {
+  var max = 0;
+  var maxarr = [];
+  var counter = [];
+  var maxarr = [];
+
+  arr.forEach(function() {
+    counter.push(0);
+  });
+
+  for (var i = 0; i < arr.length; i++) {
+    for (var j = 0; j < arr.length; j++) {
+      if (arr[i] == arr[j]) counter[i]++;
+    }
+  }
+
+  max = arrayMax(counter);
+
+  for (var i = 0; i < arr.length; i++) {
+    if (counter[i] == max) maxarr.push(arr[i]);
+  }
+
+  var unique = maxarr.filter(onlyUnique);
+  return unique;
+}
+
+function arrayMax(arr) {
+  var len = arr.length,
+    max = -Infinity;
+  while (len--) {
+    if (arr[len] > max) {
+      max = arr[len];
+    }
+  }
+  return max;
+}
+
+function onlyUnique(value, index, self) {
+  return self.indexOf(value) === index;
+}
+
 function endgame(room) {
   const users = room.users;
 
@@ -49,8 +92,9 @@ function endgame(room) {
 
   users.forEach(async (user, idx, arr) => {
     const cards = await Card.findAll({
-      where: { userId: user.id }
+      where: { userId: user.id, roomId: room.id }
     });
+
     if (
       cards[0].cardObject.face === cards[1].cardObject.face &&
       cards[1].cardObject.face === cards[2].cardObject.face
@@ -58,66 +102,33 @@ function endgame(room) {
       scoreObject[user.id] = 30.5;
     } else {
       const suits = cards.map(card => card.cardObject.suit);
-      {
-        // magic function, see test.js for tests
-
-        function find_mode(arr) {
-          var max = 0;
-          var maxarr = [];
-          var counter = [];
-          var maxarr = [];
-
-          arr.forEach(function() {
-            counter.push(0);
-          });
-
-          for (var i = 0; i < arr.length; i++) {
-            for (var j = 0; j < arr.length; j++) {
-              if (arr[i] == arr[j]) counter[i]++;
-            }
-          }
-
-          max = arrayMax(counter);
-
-          for (var i = 0; i < arr.length; i++) {
-            if (counter[i] == max) maxarr.push(arr[i]);
-          }
-
-          var unique = maxarr.filter(onlyUnique);
-          return unique;
-        }
-
-        function arrayMax(arr) {
-          var len = arr.length,
-            max = -Infinity;
-          while (len--) {
-            if (arr[len] > max) {
-              max = arr[len];
-            }
-          }
-          return max;
-        }
-
-        function onlyUnique(value, index, self) {
-          return self.indexOf(value) === index;
-        }
-        // end of magic function
-      }
+      console.log(suits, "suits");
       const highSuit = find_mode(suits);
-      if (highSuit.length === 3) {
+      console.log(highSuit);
+      if (highSuit.length > 1) {
+        console.log("highcard");
         // find highest value
-        const values = cards.map(card => card.cardObject.value);
+        const values = cards.map(card => {
+          console.log(card.cardObject.value, "value of cards");
+          return card.cardObject.value;
+        });
         const highestValue = Math.max(...values);
-
+        console.log(highestValue, "highestValue, for:", user.id);
         scoreObject[user.id] = highestValue;
       } else {
+        console.log("more cards");
         const score = cards.reduce((acc, val, idx, arr) => {
-          if (val.cardObject.suit === highSuit) {
+          console.log(acc, "acc before");
+          console.log([val.cardObject.suit], highSuit, "same?");
+          if (val.cardObject.suit === highSuit[0]) {
+            console.log(val.cardObject.suit, "val");
             acc = acc + val.cardObject.value;
           }
+          console.log(acc, "acc after");
 
           return acc;
         }, 0);
+        console.log(score, "multiple cards, for:", user.id);
 
         scoreObject[user.id] = score;
       }
