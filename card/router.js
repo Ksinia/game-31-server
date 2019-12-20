@@ -82,15 +82,15 @@ function onlyUnique(value, index, self) {
   return self.indexOf(value) === index;
 }
 
-function endgame(room) {
+async function endgame(room) {
   const users = room.users;
 
   const scoreObject = users.reduce((acc, val, idx, arr) => {
-    acc[val] = 0;
+    acc[val.id] = 0;
     return acc;
   }, {});
 
-  users.forEach(async (user, idx, arr) => {
+  const promises = users.map(async (user, idx, arr) => {
     const cards = await Card.findAll({
       where: { userId: user.id, roomId: room.id }
     });
@@ -134,6 +134,7 @@ function endgame(room) {
       }
     }
   });
+  const results = await Promise.all(promises);
   return scoreObject;
 }
 
@@ -199,7 +200,8 @@ function factory(stream) {
 
       await room.update({
         phase: "started",
-        turn: room.users[0].id
+        turn: room.users[0].id,
+        passed: null
       });
       const updatedRoom = await Room.findByPk(roomId, {
         include: [User, Card]
@@ -250,7 +252,16 @@ function factory(stream) {
       const shouldGameEnd = nextTurn(userId, turnOrder) === room.passed;
       console.log("shouldGameEnd in the turn endpoint: ", shouldGameEnd);
       if (shouldGameEnd) {
-        await room.update({ phase: "finished" });
+        const someRoom = await room.update({ phase: "finished" });
+        const scoreObject = await endgame(someRoom);
+
+        const action = {
+          type: "SCORE",
+          payload: scoreObject
+        };
+
+        const string = JSON.stringify(action);
+        stream.send(string);
       }
 
       if (room.turn === userId) {
@@ -259,6 +270,7 @@ function factory(stream) {
           const x = await room.update({ phase: "finished" });
           console.log(x);
           const scoreblock = endgame(room);
+          console.log(scoreblock);
           const updatedRoom = await Room.findByPk(roomId, {
             include: [User, Card]
           });
@@ -271,9 +283,10 @@ function factory(stream) {
             type: "score",
             payload: scoreblock
           };
-
-          stream.send(action);
-          stream.send(action2);
+          const string = JSON.stringify(action);
+          const string1 = JSON.stringify(action2);
+          stream.send(string);
+          stream.send(string1);
         } else {
           playerIds = room.users.map(user => {
             return user.id;
@@ -348,8 +361,18 @@ function factory(stream) {
         const shouldGameEnd = nextTurnId === room.passed;
         console.log(shouldGameEnd);
         if (shouldGameEnd) {
-          await room.update({ phase: "finished" });
+          const someRoom = await room.update({ phase: "finished" });
+          const scoreObject = await endgame(someRoom);
+          console.log(scoreObject, "scoreObject");
+          const action = {
+            type: "SCORE",
+            payload: scoreObject
+          };
+
+          const string = JSON.stringify(action);
+          stream.send(string);
         }
+
         await room.update({ turn: nextTurnId });
         //send entire Room to stream
         const updatedRoom = await Room.findByPk(roomId, {
