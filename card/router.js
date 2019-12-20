@@ -206,7 +206,7 @@ function factory(stream) {
       });
 
       //just give the next turn
-      playerIds = room.Users.map(user => {
+      playerIds = room.users.map(user => {
         return user.id;
       });
       const turnOrder = playerIds.sort(function(a, b) {
