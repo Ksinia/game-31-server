@@ -228,6 +228,20 @@ function factory(stream) {
       });
       console.log("room.passed: ", room.passed);
       console.log("userId: ", userId);
+
+      // TODO : make separate function
+      playerIds = room.users.map(user => {
+        return user.id;
+      });
+      const turnOrder = playerIds.sort(function(a, b) {
+        return a - b;
+      });
+      const shouldGameEnd = nextTurn(userId, turnOrder) === room.passed;
+      console.log("shouldGameEnd in the turn endpoint: ", shouldGameEnd);
+      if (shouldGameEnd) {
+        await room.update({ phase: "finished" });
+      }
+
       if (room.turn === userId) {
         if (room.passed === userId) {
           // await Room.update({ phase: "finished" }, { where: { id: roomId } });
@@ -320,7 +334,12 @@ function factory(stream) {
           return a - b;
         });
         const nextTurnId = nextTurn(userId, turnOrder);
-        await Room.update({ turn: nextTurnId }, { where: { id: roomId } });
+        const shouldGameEnd = nextTurnId === room.passed;
+        console.log(shouldGameEnd);
+        if (shouldGameEnd) {
+          await room.update({ phase: "finished" });
+        }
+        await room.update({ turn: nextTurnId });
         //send entire Room to stream
         const updatedRoom = await Room.findByPk(roomId, {
           include: [User, Card]
