@@ -47,7 +47,7 @@ function endgame(room) {
     return acc;
   }, {});
 
-  users.foreach(async (user, idx, arr) => {
+  users.forEach(async (user, idx, arr) => {
     const cards = await Card.findAll({
       where: { userId: user.id }
     });
@@ -226,10 +226,13 @@ function factory(stream) {
           }
         ]
       });
-      if (room.turn !== userId) {
-      } else {
+      console.log("room.passed: ", room.passed);
+      console.log("userId: ", userId);
+      if (room.turn === userId) {
         if (room.passed === userId) {
-          await Room.update({ phase: "finished" }, { where: { id: roomId } });
+          // await Room.update({ phase: "finished" }, { where: { id: roomId } });
+          const x = await room.update({ phase: "finished" });
+          console.log(x);
           const scoreblock = endgame(room);
           const updatedRoom = await Room.findByPk(roomId, {
             include: [User, Card]
