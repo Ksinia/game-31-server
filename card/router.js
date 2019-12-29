@@ -4,6 +4,25 @@ const Card = require("./model");
 const User = require("../user/model");
 const Room = require("../room/model");
 
+function calculateScore(cards) {
+  if (
+    cards[0].cardObject.face === cards[1].cardObject.face &&
+    cards[1].cardObject.face === cards[2].cardObject.face
+  ) {
+    return 30.5;
+  } else {
+    const scorePerSuit = cards.reduce(
+      (acc, card) => {
+        acc[card.cardObject.suit] += card.cardObject.value;
+        return acc;
+      },
+      { S: 0, H: 0, C: 0, D: 0 }
+    );
+    score = Math.max(...Object.values(scorePerSuit));
+    return score;
+  }
+}
+
 const deck = [
   { face: "7", suit: "S", value: 7 },
   { face: "8", suit: "S", value: 8 },
@@ -41,46 +60,46 @@ const deck = [
 
 // magic function, see test.js for tests
 
-function find_mode(arr) {
-  var max = 0;
-  var maxarr = [];
-  var counter = [];
-  var maxarr = [];
+// function find_mode(arr) {
+//   var max = 0;
+//   var maxarr = [];
+//   var counter = [];
+//   var maxarr = [];
 
-  arr.forEach(function() {
-    counter.push(0);
-  });
+//   arr.forEach(function() {
+//     counter.push(0);
+//   });
 
-  for (var i = 0; i < arr.length; i++) {
-    for (var j = 0; j < arr.length; j++) {
-      if (arr[i] == arr[j]) counter[i]++;
-    }
-  }
+//   for (var i = 0; i < arr.length; i++) {
+//     for (var j = 0; j < arr.length; j++) {
+//       if (arr[i] == arr[j]) counter[i]++;
+//     }
+//   }
 
-  max = arrayMax(counter);
+//   max = arrayMax(counter);
 
-  for (var i = 0; i < arr.length; i++) {
-    if (counter[i] == max) maxarr.push(arr[i]);
-  }
+//   for (var i = 0; i < arr.length; i++) {
+//     if (counter[i] == max) maxarr.push(arr[i]);
+//   }
 
-  var unique = maxarr.filter(onlyUnique);
-  return unique;
-}
+//   var unique = maxarr.filter(onlyUnique);
+//   return unique;
+// }
 
-function arrayMax(arr) {
-  var len = arr.length,
-    max = -Infinity;
-  while (len--) {
-    if (arr[len] > max) {
-      max = arr[len];
-    }
-  }
-  return max;
-}
+// function arrayMax(arr) {
+//   var len = arr.length,
+//     max = -Infinity;
+//   while (len--) {
+//     if (arr[len] > max) {
+//       max = arr[len];
+//     }
+//   }
+//   return max;
+// }
 
-function onlyUnique(value, index, self) {
-  return self.indexOf(value) === index;
-}
+// function onlyUnique(value, index, self) {
+//   return self.indexOf(value) === index;
+// }
 
 async function endgame(room) {
   const users = room.users;
@@ -94,47 +113,49 @@ async function endgame(room) {
     const cards = await Card.findAll({
       where: { userId: user.id, roomId: room.id }
     });
+    scoreObject[user.id] = calculateScore(cards);
 
-    if (
-      cards[0].cardObject.face === cards[1].cardObject.face &&
-      cards[1].cardObject.face === cards[2].cardObject.face
-    ) {
-      scoreObject[user.id] = 30.5;
-    } else {
-      const suits = cards.map(card => card.cardObject.suit);
-      console.log(suits, "suits");
-      const highSuit = find_mode(suits);
-      console.log(highSuit);
-      if (highSuit.length > 1) {
-        console.log("highcard");
-        // find highest value
-        const values = cards.map(card => {
-          console.log(card.cardObject.value, "value of cards");
-          return card.cardObject.value;
-        });
-        const highestValue = Math.max(...values);
-        console.log(highestValue, "highestValue, for:", user.id);
-        scoreObject[user.id] = highestValue;
-      } else {
-        console.log("more cards");
-        const score = cards.reduce((acc, val, idx, arr) => {
-          console.log(acc, "acc before");
-          console.log([val.cardObject.suit], highSuit, "same?");
-          if (val.cardObject.suit === highSuit[0]) {
-            console.log(val.cardObject.suit, "val");
-            acc = acc + val.cardObject.value;
-          }
-          console.log(acc, "acc after");
+    // if (
+    //   cards[0].cardObject.face === cards[1].cardObject.face &&
+    //   cards[1].cardObject.face === cards[2].cardObject.face
+    // ) {
+    //   scoreObject[user.id] = 30.5;
+    // } else {
+    //   const suits = cards.map(card => card.cardObject.suit);
+    //   console.log(suits, "suits");
+    //   const highSuit = find_mode(suits);
+    //   console.log(highSuit);
+    //   if (highSuit.length > 1) {
+    //     console.log("highcard");
+    //     // find highest value
+    //     const values = cards.map(card => {
+    //       console.log(card.cardObject.value, "value of cards");
+    //       return card.cardObject.value;
+    //     });
+    //     const highestValue = Math.max(...values);
+    //     console.log(highestValue, "highestValue, for:", user.id);
+    //     scoreObject[user.id] = highestValue;
+    //   } else {
+    //     console.log("more cards");
+    //     const score = cards.reduce((acc, val, idx, arr) => {
+    //       console.log(acc, "acc before");
+    //       console.log([val.cardObject.suit], highSuit, "same?");
+    //       if (val.cardObject.suit === highSuit[0]) {
+    //         console.log(val.cardObject.suit, "val");
+    //         acc = acc + val.cardObject.value;
+    //       }
+    //       console.log(acc, "acc after");
 
-          return acc;
-        }, 0);
-        console.log(score, "multiple cards, for:", user.id);
+    //       return acc;
+    //     }, 0);
+    //     console.log(score, "multiple cards, for:", user.id);
 
-        scoreObject[user.id] = score;
-      }
-    }
+    //     scoreObject[user.id] = score;
+    // }
+    // }
   });
   const results = await Promise.all(promises);
+  console.log(scoreObject);
   return scoreObject;
 }
 
@@ -249,85 +270,61 @@ function factory(stream) {
       const turnOrder = playerIds.sort(function(a, b) {
         return a - b;
       });
-      const shouldGameEnd = nextTurn(userId, turnOrder) === room.passed;
-      console.log("shouldGameEnd in the turn endpoint: ", shouldGameEnd);
-      if (shouldGameEnd) {
-        const someRoom = await room.update({ phase: "finished" });
-        const scoreObject = await endgame(someRoom);
+
+      if (room.turn === userId && room.passed !== userId) {
+        playerIds = room.users.map(user => {
+          return user.id;
+        });
+        const turnOrder = playerIds.sort(function(a, b) {
+          return a - b;
+        });
+
+        // check if a turn was passed, and if that is this players turn
+        //update cards
+        await Card.update(
+          { userId: userId },
+          {
+            where: { id: pickId, roomId: roomId }
+          }
+        );
+        await Card.update(
+          { userId: null },
+          {
+            where: { id: discardId, roomId: roomId }
+          }
+        );
+
+        // update turn
+        const nextTurnId = nextTurn(userId, turnOrder);
+        const shouldGameEnd = nextTurnId === room.passed;
+        console.log("shouldGameEnd in the turn endpoint: ", shouldGameEnd);
+        if (shouldGameEnd) {
+          const someRoom = await room.update({ phase: "finished" });
+          const scoreObject = await endgame(someRoom);
+
+          const action = {
+            type: "SCORE",
+            payload: scoreObject
+          };
+
+          const string = JSON.stringify(action);
+          stream.send(string);
+        }
+        await Room.update({ turn: nextTurnId }, { where: { id: roomId } });
+        //send entire Room to stream
+        const updatedRoom = await Room.findByPk(roomId, {
+          include: [User, Card]
+        });
 
         const action = {
-          type: "SCORE",
-          payload: scoreObject
+          type: "UPDATE_GAME",
+          payload: updatedRoom
         };
 
         const string = JSON.stringify(action);
+
         stream.send(string);
-      }
-
-      if (room.turn === userId) {
-        if (room.passed === userId) {
-          // await Room.update({ phase: "finished" }, { where: { id: roomId } });
-          const x = await room.update({ phase: "finished" });
-          console.log(x);
-          const scoreblock = endgame(room);
-          console.log(scoreblock);
-          const updatedRoom = await Room.findByPk(roomId, {
-            include: [User, Card]
-          });
-          const action = {
-            type: "UPDATE_GAME",
-            payload: updatedRoom
-          };
-
-          const action2 = {
-            type: "score",
-            payload: scoreblock
-          };
-          const string = JSON.stringify(action);
-          const string1 = JSON.stringify(action2);
-          stream.send(string);
-          stream.send(string1);
-        } else {
-          playerIds = room.users.map(user => {
-            return user.id;
-          });
-          const turnOrder = playerIds.sort(function(a, b) {
-            return a - b;
-          });
-
-          // check if a turn was passed, and if that is this players turn
-          //update cards
-          await Card.update(
-            { userId: userId },
-            {
-              where: { id: pickId, roomId: roomId }
-            }
-          );
-          await Card.update(
-            { userId: null },
-            {
-              where: { id: discardId, roomId: roomId }
-            }
-          );
-
-          // update turn
-          const nextTurnId = nextTurn(userId, turnOrder);
-          await Room.update({ turn: nextTurnId }, { where: { id: roomId } });
-          //send entire Room to stream
-          const updatedRoom = await Room.findByPk(roomId, {
-            include: [User, Card]
-          });
-
-          const action = {
-            type: "UPDATE_GAME",
-            payload: updatedRoom
-          };
-
-          const string = JSON.stringify(action);
-
-          stream.send(string);
-          res.send(string);
-        }
+        res.send(string);
       }
     } catch (error) {
       nxt(error);
