@@ -222,7 +222,8 @@ function factory(stream) {
       await room.update({
         phase: "started",
         turn: room.users[0].id,
-        passed: null
+        passed: null,
+        score: null
       });
       const updatedRoom = await Room.findByPk(roomId, {
         include: [User, Card]
@@ -299,16 +300,11 @@ function factory(stream) {
         const shouldGameEnd = nextTurnId === room.passed;
         console.log("shouldGameEnd in the turn endpoint: ", shouldGameEnd);
         if (shouldGameEnd) {
-          const someRoom = await room.update({ phase: "finished" });
-          const scoreObject = await endgame(someRoom);
-
-          const action = {
-            type: "SCORE",
-            payload: scoreObject
-          };
-
-          const string = JSON.stringify(action);
-          stream.send(string);
+          const scoreObject = await endgame(room);
+          await room.update({
+            phase: "finished",
+            score: scoreObject
+          });
         }
         await Room.update({ turn: nextTurnId }, { where: { id: roomId } });
         //send entire Room to stream
@@ -358,16 +354,12 @@ function factory(stream) {
         const shouldGameEnd = nextTurnId === room.passed;
         console.log(shouldGameEnd);
         if (shouldGameEnd) {
-          const someRoom = await room.update({ phase: "finished" });
-          const scoreObject = await endgame(someRoom);
+          const scoreObject = await endgame(room);
+          await room.update({
+            phase: "finished",
+            score: scoreObject
+          });
           console.log(scoreObject, "scoreObject");
-          const action = {
-            type: "SCORE",
-            payload: scoreObject
-          };
-
-          const string = JSON.stringify(action);
-          stream.send(string);
         }
 
         await room.update({ turn: nextTurnId });

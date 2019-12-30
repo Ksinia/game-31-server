@@ -16,7 +16,8 @@ const Room = db.define("room", {
     defaultValue: "waiting"
   },
   turn: Sequelize.INTEGER,
-  passed: { type: Sequelize.INTEGER, defaultValue: null }
+  passed: { type: Sequelize.INTEGER, defaultValue: null },
+  score: Sequelize.JSON
 });
 
 User.belongsTo(Room);
