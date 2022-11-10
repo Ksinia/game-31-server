@@ -1,11 +1,10 @@
 const express = require("express");
-const db = require("./db");
 const { router: loginRouter } = require("./auth/router");
 const signupRouter = require("./user/router");
 const cardRouterFactory = require("./card/router");
 const bodyParser = require("body-parser");
 const cors = require("cors");
-const Sse = require("json-sse");
+const Sse = require("./json-sse");
 const roomRouterFactory = require("./room/router");
 const Room = require("./room/model");
 const port = process.env.PORT || 4000;
